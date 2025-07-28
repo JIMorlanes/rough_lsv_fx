@@ -1,0 +1,37 @@
+# Byte-compiled / cache / virtual envs
+__pycache__/
+*.py[cod]
+*.so
+*.dll
+*.dylib
+*.pyd
+*.egg-info/
+*.egg
+.env
+.venv
+env/
+venv/
+build/
+dist/
+
+# Jupyter and IPython
+.ipynb_checkpoints/
+*.ipynb~
+
+# VS Code settings
+.vscode/
+
+# OS / system
+.DS_Store
+Thumbs.db
+
+# Conda and pip artifacts
+*.log
+*.sqlite
+*.lock
+*.bak
+*.tmp
+*.yaml
+
+# Git and GitHub
+.gitignore
