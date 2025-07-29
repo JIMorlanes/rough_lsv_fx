@@ -1,4 +1,6 @@
 """
+models/fx_sde.py
+
 Hybrid Rough-Local-Stochastic Volatility FX simulator core module.
 Contains FXSimulator class for Garman-Kohlhagen spot path generation.
 """
