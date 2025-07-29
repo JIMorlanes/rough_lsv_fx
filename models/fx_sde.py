@@ -33,7 +33,7 @@ class FXSimulator:
             if self.n_paths > 1:
                 self.Z[:,i] = (self.Z[:,i] - np.mean(self.Z[:,i])) / np.std(self.Z[:,i])
             self.X[:,i+1] = self.X[:,i] + (self.r_dom - self.r_for - 0.5 * self.sigma * self.sigma) * self.dt + \
-                np.power(self.dt, 0.5) * self.Z[:,i]
+                self.sigma * np.sqrt(self.dt) * self.Z[:,i]
             self.time[i+1] = self.time[i] + self.dt
         
         # Compute exponent of ABM
