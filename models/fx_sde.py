@@ -31,9 +31,9 @@ class FXSimulator:
             # Making sure that samples from a normal distribution have mean 0 and variance 1
 
             if self.n_paths > 1:
-                self.Z[:,i] = (self.Z[:,i] - np.mean(self.Z[:,i])) / np.std(self.Z[:,i])
-            self.X[:,i+1] = self.X[:,i] + (self.r_dom - self.r_for - 0.5 * self.sigma * self.sigma) * self.dt + \
-                self.sigma * np.sqrt(self.dt) * self.Z[:,i]
+                self.Z[:,i] = (self.Z[:,i] - self.Z[:,i].mean()) / self.Z[:,i].std()
+            self.X[:,i+1] = self.X[:,i] + (self.r_dom - self.r_for - 0.5 * self.sigma**2) * self.dt + \
+                + self.sigma * np.sqrt(self.dt) * self.Z[:,i]
             self.time[i+1] = self.time[i] + self.dt
         
         # Compute exponent of ABM
