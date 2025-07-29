@@ -1,6 +1,8 @@
 """
-Hulll-White one-factor short-rate model under the risk-neutral measure Q:
-        dr(t) = lambda*(theta - r(t)) dt + sigma dW_t
+models/hull_white.py
+
+Hulll-White one-factor short-rate model under the risk-neutral measure Q.
+Provides simulation and plotting of short-rate dynamics.
 """
 
 import numpy as np
@@ -77,9 +79,32 @@ class HullWhiteModel:
         plt.figure(figsize=(10, 5))
         for i in range(min(n_plot, self.n_paths)):
             plt.plot(self.time, r[i], lw=0.8, alpha=0.7)
-        plt.title(rf"Hull–White Short‑Rate Paths ($\lambda$={self.lambd}, $\theta$={self.theta}, $\sigma$={self.sigma})")
+        plt.title(rf"Hull-White Short-Rate Paths ($\lambda$={self.lambd}, $\theta$={self.theta}, $\eta$={self.sigma})")
         plt.xlabel("Time (years)")
         plt.ylabel("Short rate $r(t)$")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_drift(self):
+        """
+        Plot the mean-reversion drift term over time based on the average paths.
+
+        Raises:
+            ValueError: If called before generate_paths().
+        """
+        if self.paths is None:
+            raise ValueError("Call generate_paths() before plotting drift.")
+
+        r = self.paths['r']
+        mean_r = r.mean(axis=0)
+        drift = self.lambd * (self.theta - mean_r)
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(self.time, drift, lw=1.2)
+        plt.title(rf"Drift Term (λ={self.lambd}, θ={self.theta})")
+        plt.xlabel("Time (years)")
+        plt.ylabel("Drift $λ(θ - r(t))$")
         plt.grid(True)
         plt.tight_layout()
         plt.show()
