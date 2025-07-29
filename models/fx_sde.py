@@ -1,23 +1,42 @@
-# models/fx_sde.py
+"""
+Hybrid Rough-Local-Stochastic Volatility FX simulator core module.
+Contains FXSimulator class for Garman-Kohlhagen spot path generation.
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 class FXSimulator:
-    
-    def __init__(self, S_0, r_dom, r_for, sigma, T, n_steps, n_paths, seed=55):
+    """FX spot rate simulator using the Garman-Kohlhagen lognormal model."""
 
-        self.S_0 = S_0      # Initial spot rate (e.g. EUR/USD)
-        self.r_dom = r_dom  # Domestic interest rate (e.g. USD)
-        self.r_for = r_for  # Foreign interest rate (e.g. EUR)
+    def __init__(self, S_0, r_dom, r_for, sigma, T, n_steps, n_paths, seed=55):
+        """
+        Initialize FXSimulator parameters and pre-allocate arrays.
+
+        Args:
+            - S_0 (float): Initial spot FX rate.
+            - r_dom (float): Domestic interest rate (annual, continuous compounding).
+            - r_for (float): Foreign interest rate (annual, continuous compounding).
+            - sigma (float): Volatility of the spot rate.
+            - T (float): Simulation horizon in years.
+            - n_steps (int): Number of discrete time steps.
+            - n_paths (int): Number of Monte Carlo simulation paths.
+            - seed (int, optional): Seed for NumPy RNG. Defaults to 55.
+        """
+        self.S_0 = S_0      
+        self.r_dom = r_dom  
+        self.r_for = r_for  
         self.sigma = sigma  # Constant volatility
-        self.T = T          # Maturity in years
-        self.n_steps = n_steps  # Time steps (daily)
-        self.n_paths = n_paths  # Number of simulated paths
-        self.dt = T / float(n_steps)    # Time increment
-        self.seed = seed    # RNG seed for reproducibility
-        self.paths = None   # Hold the dict {'time':…, 'S':…} after simulation
-        self.time = None    # Placeholder for the time grid array
+        self.T = T         
+        self.n_steps = n_steps  
+        self.n_paths = n_paths
+        self.seed = seed
+
+        # Time increment
+        self.dt = T / float(n_steps)
+        # Define returns of simulations     
+        self.paths = None   
+        self.time = None    
 
         # Pre-draw all standard normals for efficiency 
         self.Z = np.random.normal(loc = 0.0, scale = 1.0, size = (self.n_paths, self.n_steps))
@@ -34,6 +53,14 @@ class FXSimulator:
         self.time = np.zeros(self.n_steps+1)
 
     def generate_paths(self):
+        """
+        Simulate FX spot paths with Euler-Maruyama discretization of GBM.
+
+        Returns:
+            dict: Dictionary with keys:
+                    - 'time' (ndarray): Time grid array.
+                    - 'S' (ndarray): Simulated rates of shape (n_paths, n_steps+1).
+        """
 
         np.random.seed(self.seed)
         self.X[:,0] = np.log(self.S_0)
@@ -53,6 +80,15 @@ class FXSimulator:
         return self.paths
 
     def plot_paths(self, n_plot = 10):
+        """
+        Plot simulated FX spot paths.
+
+        Args:
+            n_plot (int, optional): Number of paths to display. Defaults to 10.
+
+        Raises:
+            ValueError: If called before `generate_paths()`.
+        """
 
         if self.paths is None:
             raise ValueError("You must call generate_paths() first.")
