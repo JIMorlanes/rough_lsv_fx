@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 class HullWhiteModel:
     """Class for one-factor Hull-White short-rate simulation."""
 
-    def __init__(self, r_0, lambd, theta, sigma, T, n_steps, n_paths, seed=None):
+    def __init__(self, r_0, lambd, theta, eta, T, n_steps, n_paths, seed=None):
         """
         Initialize Hull-White model parameters.
 
@@ -19,7 +19,7 @@ class HullWhiteModel:
             r0 (float): Initial short rate.
             lambd (float): Mean-reversion speed λ.
             theta (float): Long-term mean level θ.
-            sigma (float): Volatility η of the short rate.
+            eta (float): Volatility η of the short rate.
             T (float): Simulation horizon in years.
             n_steps (int): Number of discrete time steps.
             n_paths (int): Number of Monte Carlo simulation paths.
@@ -28,14 +28,13 @@ class HullWhiteModel:
         self.r_0 = r_0
         self.lambd = lambd
         self.theta = theta
-        self.sigma = sigma
+        self.eta = eta
         self.T = T
         self.n_steps = n_steps
         self.n_paths = n_paths
         self.dt = T / float(n_steps)
         self.seed = seed
         self.paths = None
-        self.time = np.linspace(0, T, n_steps + 1)
 
     def generate_paths(self):
         """
@@ -50,14 +49,20 @@ class HullWhiteModel:
             np.random.seed(self.seed)
 
         # Pre-allocate array
+        Z = np.random.normal(0.0,1.0,(self.n_paths,self.n_steps))
+        W = np.zeros([self.n_paths, self.n_steps+1])
         r = np.zeros((self.n_paths, self.n_steps + 1))
         r[:, 0] = self.r_0
+        time = np.zeros(self.n_steps+1)
 
         # Simulate paths
-        for i in range(self.n_steps):
-            dW = np.sqrt(self.dt) * np.random.randn(self.n_paths)
-            dr = self.lambd * (self.theta - r[:, i]) * self.dt + self.sigma * dW
-            r[:, i + 1] = r[:, i] + dr
+        for i in range(0, self.n_steps):
+        # making sure that samples from normal have mean 0 and variance 1
+            if self.n_paths > 1:
+                Z[:,i] = (Z[:,i] - Z[:,i].mean()) / Z[:,i].std()
+            W[:,i+1] = W[:,i] + np.sqrt(self.dt)*Z[:,i]
+            r[:,i+1] = r[:,i] + self.lambd*(self.theta - r[:,i]) * self.dt + self.eta* (W[:,i+1]-W[:,i])
+            time[i+1] = time[i] + self.dt
 
         self.paths = {'time': self.time, 'r': r}
         return self.paths
@@ -79,7 +84,7 @@ class HullWhiteModel:
         plt.figure(figsize=(10, 5))
         for i in range(min(n_plot, self.n_paths)):
             plt.plot(self.time, r[i], lw=0.8, alpha=0.7)
-        plt.title(rf"Hull-White Short-Rate Paths ($\lambda$={self.lambd}, $\theta$={self.theta}, $\eta$={self.sigma})")
+        plt.title(rf"Hull-White Short-Rate Paths ($\lambda$={self.lambd}, $\theta$={self.theta}, $\eta$={self.eta})")
         plt.xlabel("Time (years)")
         plt.ylabel("Short rate $r(t)$")
         plt.grid(True)
