@@ -19,7 +19,7 @@ class HullWhiteModel:
             r0 (float): Initial short rate.
             lambd (float): Mean-reversion speed λ.
             theta (float): Long-term mean level θ.
-            eta (float): Volatility η of the short rate.
+            eta (float): Volatility of the short rate.
             T (float): Simulation horizon in years.
             n_steps (int): Number of discrete time steps.
             n_paths (int): Number of Monte Carlo simulation paths.
@@ -64,7 +64,7 @@ class HullWhiteModel:
             r[:,i+1] = r[:,i] + self.lambd*(self.theta - r[:,i]) * self.dt + self.eta* (W[:,i+1]-W[:,i])
             time[i+1] = time[i] + self.dt
 
-        self.paths = {'time': self.time, 'r': r}
+        self.paths = {"time": time, "r": r}
         return self.paths
 
     def plot_paths(self, n_plot=10):
