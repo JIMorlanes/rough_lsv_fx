@@ -32,7 +32,7 @@ class HullWhiteModel:
         self.T = T
         self.n_steps = n_steps
         self.n_paths = n_paths
-        self.self.time = np.zeros(self.n_steps+1)
+        self.time = np.zeros(self.n_steps+1)
         self.dt = T / float(n_steps)
         self.seed = seed
         self.paths = None
