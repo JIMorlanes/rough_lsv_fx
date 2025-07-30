@@ -65,7 +65,7 @@ class HullWhiteModel:
             r[:,i+1] = r[:,i] + self.lambd*(self.theta - r[:,i]) * self.dt + self.eta* (W[:,i+1]-W[:,i])
             self.time[i+1] = self.time[i] + self.dt
 
-        self.paths = {"self.time": self.time, "r": r}
+        self.paths = {"time": self.time, "r": r}
         return self.paths
 
     def plot_paths(self, n_plot=10):
