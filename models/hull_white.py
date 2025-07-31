@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 class HullWhiteModel:
     """Class for one-factor Hull-White short-rate simulation."""
 
-    def __init__(self, r_0, lambd, theta, eta, T, n_steps, n_paths, seed=None):
+    def __init__(self, r_0: float, lambd: float, theta: float, eta: float, T: float, n_steps: int, n_paths: int, 
+                 seed:int|None=None) -> None:
         """
         Initialize Hull-White model parameters.
 
@@ -37,7 +38,7 @@ class HullWhiteModel:
         self.seed = seed
         self.paths = None
 
-    def generate_paths(self):
+    def generate_paths(self) -> dict:
         """
         Simulate short-rate paths with Euler-Maruyama discretization.
 
