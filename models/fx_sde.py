@@ -9,96 +9,131 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class FXSimulator:
-    """FX spot rate simulator using the Garman-Kohlhagen lognormal model."""
 
-    def __init__(self, S_0, r_dom, r_for, sigma, T, n_steps, n_paths, seed=55):
+    """
+    FX spot rate simulator using the Garman-Kohlhagen model.
+    Supports constant or time-dependent domestic/foreign rates,
+    pre-draws the full normal matrix for speed, and retains
+    the full Wiener and time grids for later analytics.
+    """
+
+    def __init__(self, S_0, sigma, T, n_steps, n_paths, seed=None, r_dom=None, r_for=None,
+                r_dom_paths=None, r_for_paths=None):
         """
-        Initialize FXSimulator parameters and pre-allocate arrays.
+        Initialize FXSimulator.
 
         Args:
-            - S_0 (float): Initial spot FX rate.
-            - r_dom (float): Domestic interest rate (annual, continuous compounding).
-            - r_for (float): Foreign interest rate (annual, continuous compounding).
-            - sigma (float): Volatility of the spot rate.
-            - T (float): Simulation horizon in years.
-            - n_steps (int): Number of discrete time steps.
-            - n_paths (int): Number of Monte Carlo simulation paths.
-            - seed (int, optional): Seed for NumPy RNG. Defaults to 55.
+            S_0 (float): Initial FX spot.
+            sigma (float): Spot volatility.
+            T (float): Time horizon.
+            n_steps (int): Steps per path.
+            n_paths (int): Number of paths.
+            seed (int, optional): RNG seed.
+            r_dom (float, optional): Constant domestic rate.
+            r_for (float, optional): Constant foreign rate.
+            r_dom_paths (ndarray, optional): Rate paths (n_paths x (n_steps+1)).
+            r_for_paths (ndarray, optional): Rate paths (n_paths x (n_steps+1)).
         """
-        self.S_0 = S_0      
-        self.r_dom = r_dom  
-        self.r_for = r_for  
-        self.sigma = sigma  # Constant volatility
-        self.T = T         
-        self.n_steps = n_steps  
+
+        self.S_0 = S_0
+        self.sigma = sigma
+        self.T = T
+        self.n_steps = n_steps
         self.n_paths = n_paths
         self.seed = seed
-
-        # Time increment
         self.dt = T / float(n_steps)
-        # Define returns of simulations     
-        self.paths = None   
-        self.time = None    
 
-        # Pre-draw all standard normals for efficiency 
-        self.Z = np.random.normal(loc = 0.0, scale = 1.0, size = (self.n_paths, self.n_steps))
+        # Rate inputs: choose scalar or path arrays
+        self.r_dom = r_dom
+        self.r_for = r_for
+        self.r_dom_paths = r_dom_paths
+        self.r_for_paths = r_for_paths
 
-        # Pre-allocate the log-spot paths X: normally distributed increments
-        # X[i, j] will be the log of the spot at step j for path i
-        self.X = np.zeros((self.n_paths, self.n_steps+1))
+        # Placeholder for outputs
+        self.time = np.zeros(n_steps+1)
+        self.paths = None
 
-        # Pre-allocate the spot paths S: lognormal distribution
-        # S[i, j] = exp(X[i, j])
-        self.S = np.zeros((self.n_paths, self.n_steps+1))
-
-        # Build a flat time grid from 0 to T with n_steps+1 points. Useful for parameters dependent of time t
-        self.time = np.zeros(self.n_steps+1)
-
-    def generate_paths(self):
+    def generate_paths_with_rates(self):
+        
         """
-        Simulate FX spot paths with Euler-Maruyama discretization of GBM.
+        Simulate FX spot paths, storing full time grid and Wiener process.
 
         Returns:
-            dict: Dictionary with keys:
-                    - 'time' (ndarray): Time grid array.
-                    - 'S' (ndarray): Simulated rates of shape (n_paths, n_steps+1).
+            dict: {
+                'time': ndarray of time points,
+                'W': Wiener paths (n_paths x (n_steps+1)),
+                'X': log-spot paths (n_paths x (n_steps+1)),
+                'S': spot paths (n_paths x (n_steps+1))
+            }
         """
 
-        np.random.seed(self.seed)
-        self.X[:,0] = np.log(self.S_0)
+        if self.seed is not None:
+            np.random.seed(self.seed)
 
+        # Pre-draw full normal matrix Z
+        # antithetic pairing
+        half = self.n_paths // 2
+        Z_half = np.random.normal(0.0, 1.0, (half, self.n_steps))
+        Z = np.vstack([ Z_half, -Z_half ])      
+        # Column-wise moment matching. Making sure that samples from normal have mean 0 and variance 1
+        Z -= Z.mean(axis=0, keepdims=True)
+        Z /= Z.std(axis=0, keepdims=True)
+
+        # Pre-allocate arrays
+        X = np.zeros((self.n_paths, self.n_steps+1))
+        W = np.zeros_like(X)
+        S = np.zeros_like(X)
+        time = np.zeros(self.n_steps+1)
+
+        # Initial log-spot
+        X[:, 0] = np.log(self.S_0)
+
+        # Time-stepping loop (build time[i+1] at end of each iteration)
         for i in range(0, self.n_steps):
+            # select rates for this step
+            if self.r_dom_paths is not None and self.r_for_paths is not None:
+                rd = self.r_dom_paths[:, i]
+                rf = self.r_for_paths[:, i]
+            elif self.r_dom is not None and self.r_for is not None:
+                rd = self.r_dom
+                rf = self.r_for
+            else:
+                raise ValueError("Specify scalar rates or rate paths.")
 
-            # Making sure that samples from a normal distribution have mean 0 and variance 1
-            if self.n_paths > 1:
-                self.Z[:,i] = (self.Z[:,i] - self.Z[:,i].mean()) / self.Z[:,i].std()
-            self.X[:,i+1] = self.X[:,i] + (self.r_dom - self.r_for - 0.5 * self.sigma**2) * self.dt + \
-                + self.sigma * np.sqrt(self.dt) * self.Z[:,i]
-            self.time[i+1] = self.time[i] + self.dt
-        
-        # Compute exponent of ABM
-        self.S = np.exp(self.X)
-        self.paths = {"time": self.time, "S": self.S}
+            # Wiener increment
+            W[:, i+1] = W[:, i] + np.sqrt(self.dt) * Z[:, i]
+
+            # Euler-Maruyama on log-spot
+            drift = (rd - rf - 0.5 * self.sigma**2) * self.dt
+            X[:, i+1] = X[:, i] + drift + self.sigma * (W[:,i+1]-W[:,i])
+
+            # Build time grid
+            time[i+1] = time[i] + self.dt
+
+        # Exponentiate to get spot paths
+        S = np.exp(X)
+
+        # Store results
+        self.paths = {"time": time, "W": W, "X": X,"S": S}
+
         return self.paths
 
-    def plot_paths(self, n_plot = 10):
+    def plot_paths(self, n_plot=10):
+
         """
         Plot simulated FX spot paths.
-
-        Args:
-            n_plot (int, optional): Number of paths to display. Defaults to 10.
-
-        Raises:
-            ValueError: If called before `generate_paths()`.
         """
 
         if self.paths is None:
-            raise ValueError("You must call generate_paths() first.")
+            raise ValueError("Call generate_paths_with_rates() first.")
 
-        plt.figure(figsize=(10, 5))
-        for i in range(min(n_plot, self.n_paths)):
-            plt.plot(self.time, self.S[i], lw=0.8, alpha=0.7)
-        plt.title("FX Spot Simulation – Garman-Kohlhagen Model")
+        time = self.paths['time']
+        S = self.paths['S']
+
+        plt.figure(figsize=(10,5))
+        for j in range(min(n_plot, self.n_paths)):
+            plt.plot(time, S[j], lw=0.8, alpha=0.7)
+        plt.title(rf"FX Spot Paths – pre-draw Z ($\sigma$={self.sigma})")
         plt.xlabel("Time (years)")
         plt.ylabel("Spot Rate")
         plt.grid(True)
