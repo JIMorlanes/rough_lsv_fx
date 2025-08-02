@@ -17,9 +17,8 @@ class FXSimulator:
     the full Wiener and time grids for later analytics.
     """
 
-    def __init__(self, S_0: float, sigma: float, T: float, n_steps: int, n_paths: int, seed:int|None = None, 
-                 r_dom:float|None=None, r_for:float|None=None, r_dom_paths=None, r_for_paths=None, 
-                 corr_L: np.ndarray|None=None) -> None:
+    def __init__(self, S_0: float, sigma: float, T: float, n_steps: int, n_paths: int, seed:int|None = None) -> None:
+
         """
         Initialize FXSimulator.
 
@@ -30,10 +29,6 @@ class FXSimulator:
             n_steps (int): Steps per path.
             n_paths (int): Number of paths.
             seed (int, optional): RNG seed.
-            r_dom (float, optional): Constant domestic rate.
-            r_for (float, optional): Constant foreign rate.
-            r_dom_paths (ndarray, optional): Rate paths (n_paths x (n_steps+1)).
-            r_for_paths (ndarray, optional): Rate paths (n_paths x (n_steps+1)).
         """
 
         self.S_0 = S_0
@@ -43,16 +38,6 @@ class FXSimulator:
         self.n_paths = n_paths
         self.seed = seed
         self.dt = T / float(n_steps)
-
-        # Rate inputs: choose scalar or path arrays
-        self.r_dom = r_dom
-        self.r_for = r_for
-        self.r_dom_paths = r_dom_paths
-        self.r_for_paths = r_for_paths
-
-        # Placeholder for outputs
-        self.time = np.zeros(n_steps+1)
-        self.paths = None
 
     def generate_paths_with_rates(self, r_dom_paths: np.ndarray|None=None, r_for_paths:np.ndarray|None=None,
                                   corr_L: np.ndarray|None=None, r_dom: float|None=None, r_for: float|None=None,
@@ -115,23 +100,23 @@ class FXSimulator:
         # Time-stepping loop (build time[i+1] at end of each iteration)
         for i in range(0, self.n_steps):
             if corr_L is not None:
-                Z_uncorr = np.random.normal((self.n_paths, m))
+                Z_uncorr = np.random.normal(loc=0.0, scale=1.0,size=(self.n_paths, m))
                 Z_uncorr[:, 0] = Z_fx[:, i]
                 Z_corr = Z_uncorr @ corr_L.T
                 if store_Z_tensor is not None:
-                    store_Z_tensor[:,i,:] = Z_corr
+                    store_Z[:,i,:] = Z_corr
                 # Wiener increment
                 W[:, i+1] = W[:, i] + np.sqrt(self.dt) * Z_corr[:, 0]
             else:
                 W[:, i+1] = W[:, i] + np.sqrt(self.dt) * Z_fx[:, i]
 
             # select rates for this step
-            if self.r_dom_paths is not None and self.r_for_paths is not None:
-                rd = self.r_dom_paths[:, i]
-                rf = self.r_for_paths[:, i]
-            elif self.r_dom is not None and self.r_for is not None:
-                rd = self.r_dom
-                rf = self.r_for
+            if r_dom_paths is not None and r_for_paths is not None:
+                rd = r_dom_paths[:, i]
+                rf = r_for_paths[:, i]
+            elif r_dom is not None and r_for is not None:
+                rd = r_dom
+                rf = r_for
             else:
                 raise ValueError("Specify scalar rates or rate paths.")
 
@@ -148,7 +133,7 @@ class FXSimulator:
         # Store results
         self.paths = {"time": time, "W": W, "X": X,"S": S}
         if store_Z_tensor is not None:
-            self.paths["Z_corr"] = store_Z_tensor
+            self.paths["Z_corr"] = store_Z
 
         return self.paths
 
@@ -167,7 +152,7 @@ class FXSimulator:
         plt.figure(figsize=(10,5))
         for j in range(min(n_plot, self.n_paths)):
             plt.plot(time, S[j], lw=0.8, alpha=0.7)
-        plt.title(rf"FX Spot Paths – pre-draw Z ($\sigma$={self.sigma})")
+        plt.title(rf"FX Spot Paths - pre-draw Z ($\sigma$={self.sigma})")
         plt.xlabel("Time (years)")
         plt.ylabel("Spot Rate")
         plt.grid(True)
