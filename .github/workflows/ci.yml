@@ -1,28 +1,22 @@
 name: unit-test
-
-on:
-  push:           # every push to any branch
-  pull_request:   # and every PR targeting main
+on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: macos-latest            #  macOS runner (works fine for NumPy)
-
+    runs-on: macos-latest
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'       # same version you use locally
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with: { python-version: '3.13' }
 
     - name: Install deps
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt || true   # if you have one
         pip install numpy matplotlib pytest
 
     - name: Run pytest
+      env:
+        PYTHONPATH: ${{ github.workspace }}   # <<< add this line
       run: pytest -q
+
 
