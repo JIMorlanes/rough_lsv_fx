@@ -3,6 +3,7 @@
 import numpy as np
 from models.fx_sde import FXSimulator
 
+
 # Simulate 3-factor (FX, rd, rf) model in one call
 
 def _simulate_fx(n_paths=10000, n_steps=126):
@@ -54,7 +55,7 @@ def test_put_call_parity():
    
    # tests/test_fx_sde.py  – replace test_put_call_parity
    T, n_steps = 1.0, 252
-   paths, _   = _simulate_fx(n_paths=20_000, n_steps=n_steps)
+   paths, _   = _simulate_fx(n_paths=20000, n_steps=n_steps)
 
    S0, rd, rf = 1.10, 0.03, 0.01
    S_T        = paths["S"][:, -1]
@@ -75,3 +76,4 @@ def test_put_call_parity():
 
    abs_err_bp = adj.mean() * 1e4        # bp of notional
    assert abs(abs_err_bp) < 1.0          # <= 1 bp
+
