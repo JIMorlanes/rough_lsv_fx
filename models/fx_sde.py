@@ -23,12 +23,12 @@ class FXSimulator:
         Initialize FXSimulator.
 
         Args:
-            S_0 (float): Initial FX spot.
-            sigma (float): Spot volatility.
-            T (float): Time horizon.
-            n_steps (int): Steps per path.
-            n_paths (int): Number of paths.
-            seed (int, optional): RNG seed.
+            S_0: Initial FX spot.
+            sigma: Spot volatility.
+            T: Time horizon.
+            n_steps: Steps per path.
+            n_paths: Number of paths.
+            seed: RNG seed.
         """
 
         self.S_0 = S_0
@@ -38,6 +38,10 @@ class FXSimulator:
         self.n_paths = n_paths
         self.seed = seed
         self.dt = T / float(n_steps)
+
+        # Local random generator
+        self.rng = np.random.default_rng(seed)
+
 
     def generate_paths_with_rates(self, r_dom_paths: np.ndarray|None=None, r_for_paths:np.ndarray|None=None,
                                   corr_L: np.ndarray|None=None, r_dom: float|None=None, r_for: float|None=None,
@@ -69,16 +73,18 @@ class FXSimulator:
             }
         """
 
-        if self.seed is not None:
-            np.random.seed(self.seed)
-
         # Pre-draw full normal matrix Z, antithetic pairing + moment matching normals
         half = (self.n_paths+1) // 2    # Round up when number of paths is odd
-        Z_half = np.random.normal(0.0, 1.0, (half, self.n_steps))
-        Z_fx = np.vstack([ Z_half, -Z_half ])[: self.n_paths]   #trim to n_paths rows     
+        Z_half = self.rng.standard_normal(size=(half, self.n_steps))
+        Z_fx = np.vstack([ Z_half, -Z_half ])[: self.n_paths]   #trim to n_paths rows 
+
         # Column-wise moment matching. Making sure that samples from normal have mean 0 and variance 1
-        Z_fx -= Z_fx.mean(axis=0, keepdims=True)
-        Z_fx /= Z_fx.std(axis=0, keepdims=True)
+        if self.n_paths > 1: 
+            col_mean = Z_fx.mean(axis=0, keepdims=True)
+            col_std = Z_fx.std(axis=0, keepdims=True)
+            safe_std = np.where(col_std > 0, col_std, 1.0)
+            Z_fx = (Z_fx - col_mean) / safe_std
+
 
         # Pre-allocate arrays
         X = np.zeros((self.n_paths, self.n_steps+1))

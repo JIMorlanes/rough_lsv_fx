@@ -38,6 +38,17 @@ class HullWhiteModel:
         self.seed = seed
         self.paths = None
 
+        # Local random generator
+        self.rng = np.random.default_rng(seed)
+
+        # Precompute deterministic coefficients for exact update
+        self.exp_lambda_dt = np.exp(-self.lambd * self.dt)
+        if self.lambd > 0:
+            self.var_increment = (self.eta ** 2) / (2 * self.lambd) * (1 - np.exp(-2 * self.lambd * self.dt))
+        else:
+            self.var_increment = self.eta ** 2 * self.dt
+        self.std_increment = np.sqrt(self.var_increment)
+
     def generate_paths(self) -> dict:
         """
         Simulate short-rate paths with Euler-Maruyama discretization.
@@ -47,24 +58,28 @@ class HullWhiteModel:
                     - 'self.time' (ndarray): Time grid array.
                     - 'r' (ndarray): Simulated rates of shape (n_paths, n_steps+1).
         """
-        if self.seed is not None:
-            np.random.seed(self.seed)
 
-        # Pre-allocate array
-        Z = np.random.normal(0.0,1.0,(self.n_paths,self.n_steps))
-        W = np.zeros([self.n_paths, self.n_steps+1])
+       # Antithetic variates
+        half = (self.n_paths + 1) // 2
+        Z_half = self.rng.standard_normal(size=(half, self.n_steps))
+        Z = np.vstack((Z_half, -Z_half))[: self.n_paths]
+
+        # Safe moment matching per time step
+        if self.n_paths > 1:
+            col_mean = Z.mean(axis=0, keepdims=True)
+            col_std = Z.std(axis=0, keepdims=True)
+            safe_std = np.where(col_std > 0, col_std, 1.0)
+            Z = (Z - col_mean) / safe_std
+
+        # Pre-allocate
         r = np.zeros((self.n_paths, self.n_steps + 1))
         r[:, 0] = self.r_0
-        
 
-        # Simulate paths
-        for i in range(0, self.n_steps):
-        # making sure that samples from normal have mean 0 and variance 1
-            if self.n_paths > 1:
-                Z[:,i] = (Z[:,i] - Z[:,i].mean()) / Z[:,i].std()
-            W[:,i+1] = W[:,i] + np.sqrt(self.dt)*Z[:,i]
-            r[:,i+1] = r[:,i] + self.lambd*(self.theta - r[:,i]) * self.dt + self.eta* (W[:,i+1]-W[:,i])
-            self.time[i+1] = self.time[i] + self.dt
+        # Exact recurrence:
+        for i in range(self.n_steps):
+            deterministic = r[:, i] * self.exp_lambda_dt + self.theta * (1 - self.exp_lambda_dt)
+            stochastic = self.std_increment * Z[:, i]
+            r[:, i + 1] = deterministic + stochastic
 
         self.paths = {"time": self.time, "r": r}
         return self.paths
