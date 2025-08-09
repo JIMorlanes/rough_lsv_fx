@@ -50,7 +50,7 @@ class FXSimulator:
         """
         Simulate FX spot paths, storing full time grid and Wiener process.
 
-        Parameters:
+        Attibutes:
             r_dom_paths, r_for_paths
                 Arrays of shape *(n_paths, n_steps+1)* with pre-simulated
                 Hull-White short-rate paths.  If *None*, provide scalar
