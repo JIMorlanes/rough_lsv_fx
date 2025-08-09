@@ -47,3 +47,41 @@ def test_kernel_weights_strictly_decreasing():
         f"Kernel weights are not strictly decreasing. "
         f"Found non-decreasing diffs: {diffs[diffs >= tol]}"
     )
+
+
+def test_mean_tends_toward_theta_rough_check():
+    """
+    Compares the empirical mean variance at the end of the simulation to the 
+    theoritical long-run variance theta. the rough nature of the kernel and the 
+    stochastic term add noise, so it does not require perfect equality.
+    """
+    m = RoughHestonVolterra(
+        v0=0.10, kappa=2.0, theta=0.05, xi=0.10, H=0.1,
+        T=1.0, n_steps=256, n_paths=5000, seed=3
+    )
+    v = m.generate_paths()["v"]
+    mean_end = float(v[:, -1].mean())
+    # Should be reasonably close to theta (rough model adds noise; use loose tol)
+    assert abs(mean_end - m.theta) < 0.02
+
+
+def test_mean_reversion_matches_theoretical():
+    """
+    Check that the empirical mean of v(t) matches the theoretical
+    mean-reversion curve of the drift term (OU-like behavior) within tolerance.
+    """
+    m = RoughHestonVolterra(
+        v0=0.04, kappa=1.0, theta=0.05, xi=0.01, H=0.1,
+        T=1.0, n_steps=200, n_paths=5000, seed=42
+    )
+
+    res = m.generate_paths()
+    v = res["v"]
+    t = res["time"]
+
+    mean_emp = v.mean(axis=0)
+    mean_theo = m.theta + (m.v0 - m.theta) * np.exp(-m.kappa * t)
+
+    # Tolerance: allow small stochastic bias
+    max_abs_error = np.max(np.abs(mean_emp - mean_theo))
+    assert max_abs_error < 5e-3, f"Mean reversion mismatch too large: {max_abs_error:.3e}"
