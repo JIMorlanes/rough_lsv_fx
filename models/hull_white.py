@@ -16,7 +16,7 @@ class HullWhiteModel:
         """
         Initialize Hull-White model parameters.
 
-        Args:
+        Attributes:
             r0 (float): Initial short rate.
             lambd (float): Mean-reversion speed λ.
             theta (float): Long-term mean level θ.

@@ -18,7 +18,7 @@ def _simulate_fx(n_paths=10000, n_steps=126):
                 [1.00,  0.30, -0.20],
                 [0.30,  1.00,  0.00],
                 [-0.20, 0.00,  1.00],
-                ], dtype=float)
+            ], dtype=float)
     L = np.linalg.cholesky(R)
 
     fx = FXHybridSimulator(S0=S0, sigma=sigma,
