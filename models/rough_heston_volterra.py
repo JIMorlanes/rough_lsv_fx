@@ -171,6 +171,48 @@ class RoughHestonVolterra:
 
         return {"v": v, "time": self.time}
     
+    def generate_paths_from_increments(self, dW_v: np.ndarray) -> dict:
+        """
+        Simulate variance paths using *provided* Brownian increments for variance.
+
+        Args:
+            dW_v: Array of shape (n_paths, n_steps). These should already be scaled
+                by sqrt(dt) (i.e., ~ N(0, dt)) and will be used in the stochastic
+                Volterra term.
+
+        Returns:
+            dict with:
+                "v": ndarray (n_paths, n_steps+1) variance paths
+                "time": ndarray (n_steps+1,) time grid
+        """
+        if dW_v.shape != (self.n_paths, self.n_steps):
+            raise ValueError("dW_v shape must be (n_paths, n_steps)")
+
+        v = np.zeros((self.n_paths, self.n_steps + 1), dtype=float)
+        v[:, 0] = self.v0
+
+        for i in range(1, self.n_steps + 1):
+            vi   = v[:, :i]                # (n_paths, i)
+            Kjdt = self.w_dt[:i][::-1]     # (i,)
+            KjdW = self.w_dW[:i][::-1]     # (i,)
+
+            # Deterministic Volterra term: sum_j K_{i-j} * kappa*(theta - v_j)
+            phi = self.kappa * (self.theta - vi)      # (n_paths, i)
+            det = phi @ Kjdt                          # (n_paths,)
+
+            # Stochastic Volterra term: sum_j K_{i-j} * xi*sqrt(v_j) * dW_j
+            psi_dW = self.xi * np.sqrt(np.maximum(vi, 0.0)) * dW_v[:, :i]  # (n_paths, i)
+            sto = psi_dW @ KjdW                                           # (n_paths,)
+
+            v[:, i] = self.v0 + det + sto
+            if self.reflect:
+                v[:, i] = np.abs(v[:, i])
+            else:
+                v[:, i] = np.maximum(v[:, i], self.eps_floor)
+
+        return {"v": v, "time": self.time}
+
+    
     # -------------------------------
     # Plotting helpers 
     # -------------------------------
