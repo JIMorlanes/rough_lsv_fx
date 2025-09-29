@@ -44,3 +44,6 @@ results/
 # data/*.npz
 # data/*.npy
 # data/*.csv
+
+# local scratch notebook
+test.ipynb
