@@ -35,3 +35,6 @@ Thumbs.db
 
 # Git and GitHub
 .gitignore
+
+# local archive (ignored)
+_archive_notebooks/
