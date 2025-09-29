@@ -1,31 +1,31 @@
-# Byte-compiled / cache / virtual envs
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.vscode/
+
+# --- Python / packaging ---
 __pycache__/
 *.py[cod]
 *.so
+*.pyd
 *.dll
 *.dylib
-*.pyd
 *.egg-info/
 *.egg
+build/
+dist/
+
+# --- Environments ---
 .env
 .venv
 env/
 venv/
-build/
-dist/
 
-# Jupyter and IPython
+# --- Jupyter ---
 .ipynb_checkpoints/
 *.ipynb~
 
-# VS Code settings
-.vscode/
-
-# OS / system
-.DS_Store
-Thumbs.db
-
-# Conda and pip artifacts
+# --- Logs / misc ---
 *.log
 *.sqlite
 *.lock
@@ -33,8 +33,14 @@ Thumbs.db
 *.tmp
 *.yaml
 
-# Git and GitHub
-.gitignore
-
-# local archive (ignored)
+# --- Project-specific ---
+# Local archive for old notebooks (kept locally, not tracked)
 _archive_notebooks/
+
+# Notebook outputs (commit specific files manually if needed)
+results/
+
+# Data (uncomment if you want to ignore by default)
+# data/*.npz
+# data/*.npy
+# data/*.csv
