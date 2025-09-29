@@ -47,3 +47,6 @@ results/
 
 # local scratch notebook
 test.ipynb
+
+# ignore raw data
+data/
