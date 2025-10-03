@@ -1,3 +1,4 @@
+
 # rough_lsv_fx
 
 **Hybrid Rough / Local-Stochastic Volatility Engine for Multi-Currency FX Pricing**
@@ -12,7 +13,8 @@ The framework blends theoretical with practical implementation, drawing on:
 
 ---
 
-## 🔧 Project Structure
+## Project Structure
+
 ```text
 rough_lsv_fx/
 ├── data/                     # market vols, yield curves
@@ -34,9 +36,10 @@ rough_lsv_fx/
 │   └── 04_hedge_perf.ipynb
 └── README.md
 ```
+
 ---
 
-## ✨ Goals
+## Goals
 
 - Build a modular, testable FX pricing library in Python
 - Reproduce core components of front-office quant libraries
@@ -45,7 +48,7 @@ rough_lsv_fx/
 
 ---
 
-## 📚 Theory Background
+## Theory Background
 
 - Garman–Kohlhagen FX pricing model
 - Fractional processes (fOU, rough volatility, H < 0.5)
@@ -55,7 +58,7 @@ rough_lsv_fx/
 
 ---
 
-## 🧠 Motivation
+## Motivation
 
 This project is inspired by real-world quant models used on **FX and XVA desks**. It reflects a blend of:
 - Academic research in stochastic and fractional processes
@@ -64,21 +67,38 @@ This project is inspired by real-world quant models used on **FX and XVA desks**
 
 ---
 
-## 🗂️ Status
+## Status
 
-✅ Initial Garman–Kohlhagen simulation  
-⏳ Refactor to `FXSimulator` class  
-🔜 Smile fitting and stochastic volatility  
-🔜 Barrier option pricing and hedge testing
+- Garman–Kohlhagen simulation: completed
+- FX simulator: completed
+- Smile fitting and calibration: in progress
+- Exotic pricing and hedge testing: upcoming
 
+---
 
-## 📎 Requirements
+## Calibration Module
 
-Install from `requirements.txt` or activate `environment.yml`.
+- `06_eSSVI_surface_prep.ipynb`:  
+  Converts FX market quotes (ATM, 25Δ P/C) into `(T, k, sigma)` targets for surface fitting.  
+  Includes a calendar monotonicity check on ATM variance.
 
+- `07_fit_eSSVI_from_targets.ipynb`:  
+  Will calibrate the eSSVI surface to market points using no-arbitrage constraints.
+
+See full breakdown in [docs/calibration.md](docs/calibration.md)
+
+---
+
+## Requirements
+
+Install from `requirements.txt` or use `environment.yml`.
+
+```bash
 pip install -r requirements.txt
+```
 
-or use conda
+or
 
+```bash
 conda env create -f environment.yml
-
+```
