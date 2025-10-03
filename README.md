@@ -1,3 +1,4 @@
+
 # rough_lsv_fx
 
 **Hybrid Rough / Local-Stochastic Volatility Engine for Multi-Currency FX Pricing**
@@ -8,35 +9,48 @@ The framework blends theoretical with practical implementation, drawing on:
 - Fractional Brownian motion and fractional Ornstein–Uhlenbeck processes
 - Garman–Kohlhagen-style FX dynamics extended with stochastic rates
 - Monte Carlo simulation with optional variance reduction
-- Smiles and skews fit via SVI, SABR, or local vol surfaces
+- Smiles and skews fit via **eSSVI** surfaces; used to extract Dupire local vol for SLV
 
 ---
 
-## 🔧 Project Structure
+## Project Structure
+
 ```text
 rough_lsv_fx/
-├── data/                     # market vols, yield curves
+│
+├── docs/
+│   ├── calibration.md         # Detailed breakdown of the eSSVI calibration process
+├── datasets/                 # market vols, yield curves
+│
 ├── models/
-│   ├── hull_white.py         # stochastic short‑rate
-│   ├── rough_fou.py          # fractional‑OU variance driver
-│   ├── local_vol.py          # Dupire grid or SVI fit
-│   └── fx_sde.py             # GK spot SDE with hybrid vol + rates
+│   ├── fx_sde.py                 # Garman–Kohlhagen FX SDE with hybrid vol and stochastic rates
+│   ├── hull_white.py             # Hull–White short-rate model
+│   ├── local_vol.py              # Dupire local volatility surface generator
+│   ├── rough_fou.py              # Rough fOU variance process (Volterra kernel)
+│   └── rough_heston_volterra.py  # Rough Heston model via Volterra discretisation (production-ready)
 ├── pricing/
 │   ├── mc_pricer.py          # Monte Carlo engine, variance reduction
 │   └── greeks_adjoint.py     # pathwise and adjoint Greeks
 ├── calibration/
-│   ├── sabr_fit.py
+│   ├── eSSVI_fit.py          # surface calibration to vanilla FX quotes
 │   └── local_svol_bridge.py  # map rough‑vol params ↔ market smile
 ├── notebooks/
-│   ├── 01_paths.ipynb
-│   ├── 02_smile_fit.ipynb
-│   ├── 03_barrier_knockout.ipynb
-│   └── 04_hedge_perf.ipynb
+│   ├── 01_paths.ipynb                       # Simulate basic FX paths under GH dynamics
+│   ├── 02_rates_proto.ipynb                 # Prototyping Hull–White stochastic interest rates
+│   ├── 03_fx_hw.ipynb                       # Combine FX and rate dynamics in full SDE
+│   ├── 04_rough_fou.ipynb                   # Simulate fOU (rough volatility) process
+│   ├── 05_rough_vol_reference.ipynb         # Reference rough volatility paths with H < 0.5
+│   ├── 05a_rough_vol_step_by_step.ipynb     # Walkthrough of rough Heston simulation with plots
+│   ├── 06_eSSVI_surface_prep.ipynb          # Convert market quotes to (T, k, sigma) format
+│   ├── 06b_isotonic_regression.ipynb        # Enforce monotonic ATM vol term structure
+│   ├── 07_fit_eSSVI_from_targets.ipynb      # Calibrate eSSVI surface to market points
+│   └── 08_dupire_and_leverage.ipynb         # Extract Dupire local vol and compute SLV leverage
 └── README.md
 ```
+
 ---
 
-## ✨ Goals
+## Goals
 
 - Build a modular, testable FX pricing library in Python
 - Reproduce core components of front-office quant libraries
@@ -45,17 +59,17 @@ rough_lsv_fx/
 
 ---
 
-## 📚 Theory Background
+## Theory Background
 
 - Garman–Kohlhagen FX pricing model
 - Fractional processes (fOU, rough volatility, H < 0.5)
-- SABR / SVI volatility modeling
+- SVI / eSSVI volatility modeling
 - Hull–White short rate models
 - Monte Carlo Greeks (adjoint, pathwise)
 
 ---
 
-## 🧠 Motivation
+## Motivation
 
 This project is inspired by real-world quant models used on **FX and XVA desks**. It reflects a blend of:
 - Academic research in stochastic and fractional processes
@@ -64,21 +78,40 @@ This project is inspired by real-world quant models used on **FX and XVA desks**
 
 ---
 
-## 🗂️ Status
+## Status
 
-✅ Initial Garman–Kohlhagen simulation  
-⏳ Refactor to `FXSimulator` class  
-🔜 Smile fitting and stochastic volatility  
-🔜 Barrier option pricing and hedge testing
+- Garman–Kohlhagen simulation: completed
+- FX simulator: completed
+- Smile fitting and calibration: in progress
+- Exotic pricing and hedge testing: upcoming
 
+---
 
-## 📎 Requirements
+## Calibration Module
 
-Install from `requirements.txt` or activate `environment.yml`.
+- `06_eSSVI_surface_prep.ipynb`:  
+  Converts FX market quotes (ATM, 25Δ P/C) into `(T, k, sigma)` targets for surface fitting.  
+  Includes a calendar monotonicity check on ATM variance.
 
+- `07_fit_eSSVI_from_targets.ipynb`:  
+  Will calibrate the eSSVI surface to market points using no-arbitrage constraints.
+
+Documentation available in the [docs/](docs/) folder.
+
+See full breakdown in [docs/calibration.md](docs/calibration.md)
+
+---
+
+## Requirements
+
+Install from `requirements.txt` or use `environment.yml`.
+
+```bash
 pip install -r requirements.txt
+```
 
-or use conda
+or
 
+```bash
 conda env create -f environment.yml
-
+```
