@@ -9,7 +9,7 @@ The framework blends theoretical with practical implementation, drawing on:
 - Fractional Brownian motion and fractional Ornstein–Uhlenbeck processes
 - Garman–Kohlhagen-style FX dynamics extended with stochastic rates
 - Monte Carlo simulation with optional variance reduction
-- Smiles and skews fit via SVI, eSSVI, or local vol surfaces
+- Smiles and skews fit via **eSSVI** surfaces; used to extract Dupire local vol for SLV
 
 ---
 
@@ -17,12 +17,17 @@ The framework blends theoretical with practical implementation, drawing on:
 
 ```text
 rough_lsv_fx/
+│
+├── docs/
+│   ├── calibration.md         # Detailed breakdown of the eSSVI calibration process
 ├── datasets/                 # market vols, yield curves
+│
 ├── models/
-│   ├── hull_white.py         # stochastic short‑rate
-│   ├── rough_fou.py          # fractional‑OU variance driver
-│   ├── local_vol.py          # Dupire grid or SVI fit
-│   └── fx_sde.py             # GK spot SDE with hybrid vol + rates
+│   ├── fx_sde.py                 # Garman–Kohlhagen FX SDE with hybrid vol and stochastic rates
+│   ├── hull_white.py             # Hull–White short-rate model
+│   ├── local_vol.py              # Dupire local volatility surface generator
+│   ├── rough_fou.py              # Rough fOU variance process (Volterra kernel)
+│   └── rough_heston_volterra.py  # Rough Heston model via Volterra discretisation (production-ready)
 ├── pricing/
 │   ├── mc_pricer.py          # Monte Carlo engine, variance reduction
 │   └── greeks_adjoint.py     # pathwise and adjoint Greeks
@@ -30,10 +35,16 @@ rough_lsv_fx/
 │   ├── eSSVI_fit.py          # surface calibration to vanilla FX quotes
 │   └── local_svol_bridge.py  # map rough‑vol params ↔ market smile
 ├── notebooks/
-│   ├── 06_eSSVI_surface_prep.ipynb       # From article data to (T, k, sigma) targets
-│   ├── 06b_isotonic_regression.ipynb     # (Optional) Fix decreasing θ(T) via isotonic fit
-│   ├── 07_fit_eSSVI_from_targets.ipynb   # Fit eSSVI model to vanilla FX quotes
-│   └── 08_dupire_and_leverage.ipynb      # Extract Dupire LV and compute SLV leverage
+│   ├── 01_paths.ipynb                       # Simulate basic FX paths under GH dynamics
+│   ├── 02_rates_proto.ipynb                 # Prototyping Hull–White stochastic interest rates
+│   ├── 03_fx_hw.ipynb                       # Combine FX and rate dynamics in full SDE
+│   ├── 04_rough_fou.ipynb                   # Simulate fOU (rough volatility) process
+│   ├── 05_rough_vol_reference.ipynb         # Reference rough volatility paths with H < 0.5
+│   ├── 05a_rough_vol_step_by_step.ipynb     # Walkthrough of rough Heston simulation with plots
+│   ├── 06_eSSVI_surface_prep.ipynb          # Convert market quotes to (T, k, sigma) format
+│   ├── 06b_isotonic_regression.ipynb        # Enforce monotonic ATM vol term structure
+│   ├── 07_fit_eSSVI_from_targets.ipynb      # Calibrate eSSVI surface to market points
+│   └── 08_dupire_and_leverage.ipynb         # Extract Dupire local vol and compute SLV leverage
 └── README.md
 ```
 
