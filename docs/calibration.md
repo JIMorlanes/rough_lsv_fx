@@ -37,6 +37,31 @@ $\theta(T) = \sigma_{\text{ATM}}^2 T$
 
 Checked via finite differences and optionally smoothed using isotonic regression.
 
+## Isotonic regression: why and how we use it here
+
+**Goal.** Enforce **calendar monotonicity** of per-tenor total variance series (e.g., $w(T)=\sigma^2 T$ for 25ΔP / ATM / 25ΔC), i.e. we want
+$$
+w(T_1)\le w(T_2)\le \cdots \le w(T_n)\quad \text{for } T_1<\cdots<T_n,
+$$
+because total variance must be **non-decreasing in $T$** (no calendar arbitrage).
+
+**Problem.** Raw quotes are noisy; you may see tiny dips (e.g., at some $T$). We want the **closest** non-decreasing sequence to the observed data, changing it as little as possible.
+
+**Isotonic regression (non-decreasing).** Given data $y_1,\dots,y_n$ at increasing tenors, solve
+$$
+\min_{x_1\le x_2\le \cdots \le x_n}\; \sum_{i=1}^n (x_i - y_i)^2.
+$$
+- This is the **orthogonal projection** (least-squares sense) onto the convex cone of non-decreasing sequences.
+- The solution is computed by the **Pool-Adjacent-Violators Algorithm (PAVA)**:
+  1. Start with each point as its own “block” with value $y_i$.
+  2. Scan left→right. If a block’s value exceeds the next block’s value (a violation), **pool** the two blocks: replace both by a **weighted average** (weights = block sizes).
+  3. Keep pooling backward until monotonicity is restored locally.
+  4. Continue the scan; the result is piecewise constant and **non-decreasing**.
+
+**Why here?** It gives an **objective, minimal** cleanup of $w(T)$ (or $\theta(T)$) so eSSVI/Dupire are fed **no-arb** inputs, without ad-hoc nudges. Small dips get “flattened” into short plateaus; rising regions remain untouched.
+
+**What to apply it to.** Apply to just the **ATM** series $w_{\text{ATM}}(T)$, or to **all three** buckets $w_{25P}(T)$, $w_{\text{ATM}}(T)$, $w_{25C}(T)$ (calendar must hold at each fixed $k$ as well).
+
 ---
 
 ## Step 2: eSSVI Calibration (`07_fit_eSSVI_from_targets.ipynb`)
