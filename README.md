@@ -9,7 +9,7 @@ The framework blends theoretical with practical implementation, drawing on:
 - Fractional Brownian motion and fractional Ornstein–Uhlenbeck processes
 - Garman–Kohlhagen-style FX dynamics extended with stochastic rates
 - Monte Carlo simulation with optional variance reduction
-- Smiles and skews fit via SVI, SABR, or local vol surfaces
+- Smiles and skews fit via SVI, eSSVI, or local vol surfaces
 
 ---
 
@@ -17,7 +17,7 @@ The framework blends theoretical with practical implementation, drawing on:
 
 ```text
 rough_lsv_fx/
-├── data/                     # market vols, yield curves
+├── datasets/                 # market vols, yield curves
 ├── models/
 │   ├── hull_white.py         # stochastic short‑rate
 │   ├── rough_fou.py          # fractional‑OU variance driver
@@ -27,13 +27,13 @@ rough_lsv_fx/
 │   ├── mc_pricer.py          # Monte Carlo engine, variance reduction
 │   └── greeks_adjoint.py     # pathwise and adjoint Greeks
 ├── calibration/
-│   ├── sabr_fit.py
+│   ├── eSSVI_fit.py          # surface calibration to vanilla FX quotes
 │   └── local_svol_bridge.py  # map rough‑vol params ↔ market smile
 ├── notebooks/
-│   ├── 01_paths.ipynb
-│   ├── 02_smile_fit.ipynb
-│   ├── 03_barrier_knockout.ipynb
-│   └── 04_hedge_perf.ipynb
+│   ├── 06_eSSVI_surface_prep.ipynb       # From article data to (T, k, sigma) targets
+│   ├── 06b_isotonic_regression.ipynb     # (Optional) Fix decreasing θ(T) via isotonic fit
+│   ├── 07_fit_eSSVI_from_targets.ipynb   # Fit eSSVI model to vanilla FX quotes
+│   └── 08_dupire_and_leverage.ipynb      # Extract Dupire LV and compute SLV leverage
 └── README.md
 ```
 
@@ -52,7 +52,7 @@ rough_lsv_fx/
 
 - Garman–Kohlhagen FX pricing model
 - Fractional processes (fOU, rough volatility, H < 0.5)
-- SABR / SVI volatility modeling
+- SVI / eSSVI volatility modeling
 - Hull–White short rate models
 - Monte Carlo Greeks (adjoint, pathwise)
 
@@ -84,6 +84,8 @@ This project is inspired by real-world quant models used on **FX and XVA desks**
 
 - `07_fit_eSSVI_from_targets.ipynb`:  
   Will calibrate the eSSVI surface to market points using no-arbitrage constraints.
+
+Documentation available in the [docs/](docs/) folder.
 
 See full breakdown in [docs/calibration.md](docs/calibration.md)
 
